@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ug">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ئەلشىفا - نومۇر ئېلىش</title>
+<style>
+body{margin:0;background:#f6f9ff;font-family:sans-serif}
+.header{background:#00a8e8;color:#fff;padding:18px;text-align:center;font-size:22px;font-weight:bold}
+.box{background:#fff;margin:15px;padding:20px;border-radius:16px;box-shadow:0 4px 15px #0001}
+input,select{width:100%;padding:12px;margin:8px 0;border:1px solid #ddd;border-radius:10px;font-size:15px}
+.btn{width:100%;background:#00a8e8;color:#fff;border:none;padding:14px;border-radius:10px;font-size:17px;font-weight:bold;cursor:pointer}
+.closedBox{background:#f8d7da;color:#721c24;padding:20px;border-radius:12px;text-align:center;font-weight:bold;display:none;line-height:1.8}
+.myNumBox{background:linear-gradient(135deg,#e8f5e9,#fff);border:2px dashed #28a745;padding:20px;border-radius:15px;text-align:center}
+.wait{background:#fff3cd;padding:15px;border-radius:10px;text-align:center;margin-top:10px}
+.smallBtn{background:#6c757d;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="header">ئەلشىفا تېبابەتچىلىكى</div>
+<div class="box">
+
+<div id="closedBox" class="closedBox">⛔ ھازىر نومۇر بېرىش توختىتىلدى<br><small>باشقۇرغۇچى ئاچقاندا ئاندىن نومۇر ئالالايسىز</small></div>
+
+<div id="myNumberBox" class="myNumBox" style="display:none">
+<h3>🎫 مىنىڭ نومۇرۇم</h3>
+<h1 id="savedNum" style="font-size:65px;margin:5px;color:#0d47a1"></h1>
+<p id="savedTime" style="font-size:20px;font-weight:bold"></p>
+<p id="savedDate" style="color:#555"></p>
+<button class="smallBtn" onclick="clearMyData()">نومۇرنى تاشلاپ قايتا ئېلىش (سىناق ئۈچۈن)</button>
+</div>
+
+<div id="formArea">
+<h3>نومۇر ئېلىش جەدۋىلى</h3>
+<input id="name" placeholder="ئىسمىڭىز">
+<input id="age" type="number" placeholder="يېشىڭىز">
+<select id="gender"><option value="">جىنسى تاللاڭ</option><option>ئەر</option><option>ئايال</option></select>
+<input id="phone" placeholder="تېلېفون نومۇرىڭىز">
+<button class="btn" onclick="requestNum()">ئىلتىماس قىل</button>
+<div id="waitBox" class="wait" style="display:none">⏳ ئىلتىماس ئەۋەتىلدى، باشقۇرغۇچى ھەئە دېگەندە نومۇرىڭىز بۇ يەردە چىقىدۇ. بەتنى ياپماڭ</div>
+<p id="msg" style="text-align:center;color:#666;font-size:12px;margin-top:10px">بىر تېلېفون بىر كۈندە بىر نومۇرلا ئالالايدۇ</p>
+</div>
+
+</div>
+<script>
+function getSettings(){return JSON.parse(localStorage.getItem('elshifa_settings')||'{"isOpen":true}');}
+
+function checkStatus(){
+ let s=getSettings();
+ let closed=document.getElementById('closedBox');
+ let form=document.getElementById('formArea');
+ if(!s.isOpen){
+  closed.style.display='block';
+  // ئەگەر نومۇرۇم بولمىسا جەدۋەلنى يوشۇر
+  if(!localStorage.getItem('elshifa_my_number')) form.style.display='none';
+ }else{
+  closed.style.display='none';
+  if(!localStorage.getItem('elshifa_my_number')) form.style.display='block';
+ }
+}
+
+function checkMyNumber(){
+ let todayStr=new Date().toDateString();
+ let saved=JSON.parse(localStorage.getItem('elshifa_my_number')||'null');
+ if(saved){
+  // يېڭى كۈن باشلانغاندا ئاپتوماتىك يوقايدۇ
+  if(saved.todayStr!=todayStr){
+   localStorage.removeItem('elshifa_my_number');
+   return false;
+  }
+  document.getElementById('myNumberBox').style.display='block';
+  document.getElementById('savedNum').innerText='#'+saved.num;
+  document.getElementById('savedTime').innerText=saved.arriveTime+' دا كېلىڭ';
+  document.getElementById('savedDate').innerText=saved.dateISO+' | '+saved.name;
+  document.getElementById('formArea').style.display='none';
+  return true;
+ }
+ document.getElementById('myNumberBox').style.display='none';
+ return false;
+}
+
+function requestNum(){
+ let s=getSettings(); 
+ if(!s.isOpen){alert('ھازىر نومۇر بېرىش توختىتىلغان');return;}
+
+ let name=document.getElementById('name').value.trim();
+ let age=document.getElementById('age').value.trim();
+ let gender=document.getElementById('gender').value;
+ let phone=document.getElementById('phone').value.trim();
+ if(!name||!age||!gender||!phone){alert('ھەممە ئۇچۇرنى تولدۇرۇڭ');return;}
+
+ // 1- ئۆزۈمدە نومۇر بارمۇ؟ بار بولسا توس
+ if(checkMyNumber()){
+   alert('سىز بۈگۈن نومۇر ئالغان، يۇقىرىدىكى نومۇرغا قاراڭ');
+   return;
+ }
+
+ let pend=JSON.parse(localStorage.getItem('elshifa_pending')||'[]');
+ // 2- بۇ تېلېفون بىلەن ئىلگىرى ئىلتىماس بارمۇ؟
+ if(pend.find(x=>x.phone==phone)){
+   alert('بۇ تېلېفون بىلەن ئىلتىماس قىلىنغان، تەستىقنى ساقلاڭ');
+   document.getElementById('waitBox').style.display='block';
+   localStorage.setItem('elshifa_last_req',JSON.stringify({phone}));
+   checkApproval();
+   return;
+ }
+
+ // يېڭى ئىلتىماس
+ pend.push({id:Date.now(),name,age,gender,phone,time:new Date().toLocaleString(),dateISO:new Date().toISOString().slice(0,10),todayStr:new Date().toDateString()});
+ localStorage.setItem('elshifa_pending',JSON.stringify(pend));
+ localStorage.setItem('elshifa_last_req',JSON.stringify({phone}));
+ document.getElementById('waitBox').style.display='block';
+}
+
+function checkApproval(){
+ let last=JSON.parse(localStorage.getItem('elshifa_last_req')||'null'); 
+ if(!last) return;
+ let approved=JSON.parse(localStorage.getItem('elshifa_approved')||'[]');
+ let found=approved.find(a=>a.phone==last.phone);
+ if(found){
+  let saveObj={num:found.num,arriveTime:found.arriveTime,name:found.name,dateISO:found.dateISO,todayStr:new Date().toDateString()};
+  localStorage.setItem('elshifa_my_number',JSON.stringify(saveObj));
+  checkMyNumber(); 
+  document.getElementById('waitBox').style.display='none';
+  checkStatus();
+ }
+}
+
+function clearMyData(){
+ if(confirm('سىناق ئۈچۈن بارلىق سانلىق مەلۇماتنى تازىلامسىز؟')){
+  localStorage.removeItem('elshifa_my_number');
+  localStorage.removeItem('elshifa_last_req');
+  location.reload();
+ }
+}
+
+checkStatus(); checkMyNumber();
+setInterval(()=>{checkStatus(); checkMyNumber(); checkApproval();},2000);
+</script>
+</body>
+</html>
