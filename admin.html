@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ug">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ئەلشىفا باشقۇرۇش</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef2f7;font-family:sans-serif}
+.header{background:#0d47a1;color:#fff;padding:15px;text-align:center;font-weight:bold;font-size:18px}
+.login-box{max-width:360px;margin:70px auto;background:#fff;padding:25px;border-radius:15px;text-align:center;box-shadow:0 5px 20px #0002}
+#panel{display:none;max-width:1100px;margin:auto;padding:15px}
+.card{background:#fff;padding:18px;border-radius:12px;margin-bottom:15px;box-shadow:0 2px 8px #0001}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
+.row label{font-size:13px;color:#333;display:block;margin-bottom:4px}
+.row input{width:100%;padding:9px;border:1px solid #ccc;border-radius:7px}
+.days{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.days label{flex:1 1 90px;min-width:85px;background:#f8f9fa;padding:10px 5px;text-align:center;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid #ddd;user-select:none}
+.days label:has(input:checked){background:#d1e7ff;border-color:#0d47a1;color:#0d47a1;font-weight:bold}
+.days input{margin-left:4px}
+.btn{padding:9px 15px;border:none;border-radius:7px;cursor:pointer;font-weight:bold;margin:3px}
+.btn-blue{background:#00a8e8;color:#fff}.btn-red{background:#dc3545;color:#fff}.btn-green{background:#28a745;color:#fff}.btn-dark{background:#343a40;color:#fff}
+table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:13px}th{background:#0d47a1;color:#fff}
+</style>
+</head>
+<body>
+<div class="header">ئەلشىفا - باشقۇرۇش سىستېمىسى</div>
+<div id="loginBox" class="login-box"><h3>باشقۇرغۇچى كىرىشى</h3><p>شىفىر: shifa123</p><input id="pwd" type="password" placeholder="شىفىر"><br><br><button onclick="login()" style="width:100%;padding:12px;background:#0d47a1;color:#fff;border:none;border-radius:8px">كىرىش</button><p id="err" style="color:red;display:none">شىفىر خاتا!</p></div>
+
+<div id="panel">
+<div class="card">
+<h3>⚙️ ۋاقىت ۋە كۈن تەرتىپى</h3>
+<div class="row">
+<div><label>نومۇر بېرىش باشلىنىش</label><input id="issueStart" type="time" value="08:00"></div>
+<div><label>نومۇر بېرىش ئاخىرلىشىش</label><input id="issueEnd" type="time" value="12:00"></div>
+</div>
+<div class="row">
+<div><label>كېسەل كۆرۈش باشلىنىش</label><input id="consultStart" type="time" value="09:00"></div>
+<div><label>كېسەل كۆرۈش ئاخىرلىشىش</label><input id="consultEnd" type="time" value="17:00"></div>
+</div>
+<div class="row">
+<div><label>ھەر بىمار ئارىلىقى (مىنۇت)</label><input id="slot" type="number" value="15"></div>
+<div><label>بىر كۈنلۈك نومۇر چېكى</label><input id="max" type="number" value="30"></div>
+</div>
+
+<label style="margin-top:12px;display:block;font-weight:bold">نومۇر بېرىش كۈنلىرى</label>
+<div class="days">
+<label><input type="checkbox" class="dayCheck" value="1" checked> دۈشەنبە</label>
+<label><input type="checkbox" class="dayCheck" value="2" checked> سەيشەنبە</label>
+<label><input type="checkbox" class="dayCheck" value="3" checked> چارشەنبە</label>
+<label><input type="checkbox" class="dayCheck" value="4" checked> پەيشەنبە</label>
+<label><input type="checkbox" class="dayCheck" value="5" checked> جۈمە</label>
+<label><input type="checkbox" class="dayCheck" value="6" checked> شەنبە</label>
+<label><input type="checkbox" class="dayCheck" value="0"> يەكشەنبە</label>
+</div>
+<br>
+<button class="btn btn-green" onclick="saveSet()">💾 ساقلاش</button>
+<button id="toggleBtn" class="btn" onclick="toggleOpen()"></button>
+<span id="openStatus" style="margin-right:8px;font-weight:bold"></span>
+</div>
+
+<div class="card"><h3>🔔 يېڭى ئىلتىماس (<span id="pendCount">0</span>)</h3><div id="pendList"></div></div>
+
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+<h3>✅ تەستىقلانغانلار</h3><button class="btn btn-red" onclick="clearApproved()">🗑️ تىزىملىكنى يۇيۇش</button>
+</div>
+<table><thead><tr><th>نومۇر</th><th>ئىسىم</th><th>ياش/جىنس</th><th>تېلېفون</th><th>كېلىش ۋاقتى</th><th>ئۆچۈر</th></tr></thead><tbody id="approvedTable"></tbody></table>
+</div>
+
+<div class="card"><h3>📅 تارىخ بويىچە ئىزدەش</h3><input id="searchDate" type="date"> <button class="btn btn-blue" onclick="searchHistory()">ئىزدەش</button> <button class="btn btn-dark" onclick="showAllHistory()">ھەممىسى</button> <button class="btn btn-red" onclick="deleteHistory()">تارىخنى ئۆچۈرۈش</button><div id="historyList" style="margin-top:10px"></div></div>
+</div>
+
+<script>
+let settings=JSON.parse(localStorage.getItem('elshifa_settings')||'{"issueStart":"08:00","issueEnd":"12:00","consultStart":"09:00","consultEnd":"17:00","slot":15,"max":30,"isOpen":true,"issueDays":[1,2,3,4,5,6]}');
+function login(){if(document.getElementById('pwd').value=='123456'){document.getElementById('loginBox').style.display='none';document.getElementById('panel').style.display='block';initForm();loadData();}else document.getElementById('err').style.display='block';}
+function initForm(){document.getElementById('issueStart').value=settings.issueStart;document.getElementById('issueEnd').value=settings.issueEnd;document.getElementById('consultStart').value=settings.consultStart;document.getElementById('consultEnd').value=settings.consultEnd;document.getElementById('slot').value=settings.slot;document.getElementById('max').value=settings.max;document.querySelectorAll('.dayCheck').forEach(c=>{c.checked=settings.issueDays.includes(parseInt(c.value))});}
+function saveSet(){settings.issueStart=document.getElementById('issueStart').value;settings.issueEnd=document.getElementById('issueEnd').value;settings.consultStart=document.getElementById('consultStart').value;settings.consultEnd=document.getElementById('consultEnd').value;settings.slot=parseInt(document.getElementById('slot').value)||15;settings.max=parseInt(document.getElementById('max').value)||30;settings.issueDays=[];document.querySelectorAll('.dayCheck:checked').forEach(c=>settings.issueDays.push(parseInt(c.value)));localStorage.setItem('elshifa_settings',JSON.stringify(settings));alert('✅ ساقلاندى');loadData();}
+function toggleOpen(){settings.isOpen=!settings.isOpen;localStorage.setItem('elshifa_settings',JSON.stringify(settings));loadData();}
+function loadData(){document.getElementById('openStatus').innerText=settings.isOpen?'🟢 ئېچىق':'🔴 توختىتىلدى';document.getElementById('toggleBtn').innerText=settings.isOpen?'⏸️ توختىتىش':'▶️ ئېچىش';document.getElementById('toggleBtn').className=settings.isOpen?'btn btn-red':'btn btn-green';let pend=JSON.parse(localStorage.getItem('elshifa_pending')||'[]');document.getElementById('pendCount').innerText=pend.length;let html='';pend.forEach(p=>{html+=`<div style="display:flex;justify-content:space-between;border:1px solid #eee;padding:10px;border-radius:8px;margin:5px 0"><div><b>${p.name} ${p.age}ياش ${p.gender}</b><br><small>${p.phone}</small></div><div><button class="btn btn-green" onclick="approve(${p.id})">ھەئە</button><button class="btn btn-red" onclick="reject(${p.id})">ياق</button></div></div>`});document.getElementById('pendList').innerHTML=html||'يوق';let approved=JSON.parse(localStorage.getItem('elshifa_approved')||'[]');let table='';approved.slice().reverse().forEach(a=>{table+=`<tr><td>#${a.num}</td><td>${a.name}</td><td>${a.age}/${a.gender}</td><td>${a.phone}</td><td><b>${a.arriveTime}</b></td><td><button class="btn btn-red" onclick="delOne(${a.num})">x</button></td></tr>`});document.getElementById('approvedTable').innerHTML=table||'<tr><td colspan="6">يوق</td></tr>';}
+function calcTime(num){let [h,m]=settings.consultStart.split(':').map(Number);let total=m+h*60+(num-1)*settings.slot;let nh=Math.floor(total/60)%24;let nm=total%60;return `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}`;}
+function approve(id){let pend=JSON.parse(localStorage.getItem('elshifa_pending')||'[]');let approved=JSON.parse(localStorage.getItem('elshifa_approved')||'[]');if(approved.length>=settings.max){alert('چەك توشتى');return;}let p=pend.find(x=>x.id==id);let num=approved.length+1;let arriveTime=calcTime(num);approved.push({...p,num,arriveTime,dateISO:new Date().toISOString().slice(0,10)});pend=pend.filter(x=>x.id!=id);localStorage.setItem('elshifa_pending',JSON.stringify(pend));localStorage.setItem('elshifa_approved',JSON.stringify(approved));let hist=JSON.parse(localStorage.getItem('elshifa_history')||'[]');hist.push({dateISO:new Date().toISOString().slice(0,10),name:p.name,num,arriveTime});localStorage.setItem('elshifa_history',JSON.stringify(hist));loadData();}
+function reject(id){let p=JSON.parse(localStorage.getItem('elshifa_pending')||'[]').filter(x=>x.id!=id);localStorage.setItem('elshifa_pending',JSON.stringify(p));loadData();}
+function delOne(num){let a=JSON.parse(localStorage.getItem('elshifa_approved')||'[]').filter(x=>x.num!=num);localStorage.setItem('elshifa_approved',JSON.stringify(a));loadData();}
+function clearApproved(){if(confirm('يۇيۇڭمۇ؟')){localStorage.removeItem('elshifa_approved');loadData();}}
+function searchHistory(){let d=document.getElementById('searchDate').value;if(!d){alert('تارىخ');return;}let h=JSON.parse(localStorage.getItem('elshifa_history')||'[]').filter(x=>x.dateISO==d);renderHist(h);}
+function showAllHistory(){renderHist(JSON.parse(localStorage.getItem('elshifa_history')||'[]'));}
+function renderHist(list){let h='<table><tr><th>تارىخ</th><th>نومۇر</th><th>ئىسىم</th><th>ۋاقىت</th></tr>';list.slice().reverse().forEach(x=>h+=`<tr><td>${x.dateISO}</td><td>#${x.num}</td><td>${x.name}</td><td>${x.arriveTime}</td></tr>`);h+='</table>';if(list.length==0)h='يوق';document.getElementById('historyList').innerHTML=h;}
+function deleteHistory(){if(confirm('ئۆچۈرەمسىز؟')){localStorage.removeItem('elshifa_history');document.getElementById('historyList').innerHTML='';}}
+setInterval(()=>{if(document.getElementById('panel').style.display=='block')loadData()},3000);
+</script>
+</body>
+</html>
