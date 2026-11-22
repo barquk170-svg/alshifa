@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ug">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ئەلشىفا - باشقۇرۇش</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef2f7;font-family:system-ui,sans-serif;color:#222}
+.header{background:#0d47a1;color:#fff;padding:16px;text-align:center;font-weight:bold;font-size:19px}
+main{max-width:1100px;margin:auto;padding:14px}.card{background:#fff;padding:18px;border-radius:13px;margin:12px 0;box-shadow:0 2px 8px #0000000a}
+input,button{font:inherit}input{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;margin:5px 0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}.days{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.days label{padding:9px;background:#f7f8fa;border:1px solid #ddd;border-radius:8px}
+.btn{padding:9px 14px;border:0;border-radius:7px;cursor:pointer;font-weight:bold;margin:3px}.blue{background:#078fca;color:white}.green{background:#218838;color:white}.red{background:#dc3545;color:white}.dark{background:#343a40;color:white}
+.pending{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid #eee;padding:10px;border-radius:8px;margin:6px 0}
+table{width:100%;border-collapse:collapse;min-width:600px}th,td{padding:9px;border-bottom:1px solid #eee;text-align:center;font-size:13px}th{background:#0d47a1;color:white}.empty{text-align:center;color:#777;padding:15px}.hidden{display:none!important}.notice{padding:10px;background:#fff3cd;border-radius:8px;line-height:1.7}
+@media(max-width:600px){.row{grid-template-columns:1fr}}
+</style>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head><body>
+<div class="header">ئەلشىفا - باشقۇرۇش سىستېمىسى</div>
+<main>
+<div id="loginBox" class="card" style="max-width:420px;margin:50px auto">
+<h3>باشقۇرغۇچى كىرىشى</h3><p class="notice">Firebase Authentication دا قۇرۇلغان باشقۇرغۇچى ھېساباتى بىلەن كىرىڭ.</p>
+<input id="email" type="email" placeholder="باشقۇرغۇچى ئېلخەت" autocomplete="username">
+<input id="pwd" type="password" placeholder="پارول" autocomplete="current-password">
+<button class="btn blue" style="width:100%" onclick="login()">كىرىش</button><div id="err" style="color:#b00"></div>
+</div>
+<div id="panel" class="hidden">
+<div class="card"><button class="btn dark" onclick="logout()">چىقىش</button><span id="userLabel"></span></div>
+<div class="card">
+<h3>⚙️ ۋاقىت ۋە كۈن تەرتىپى</h3>
+<div class="row"><div><label>نومۇر بېرىش باشلىنىشى</label><input id="issueStart" type="time"></div><div><label>نومۇر بېرىش ئاخىرلىشىشى</label><input id="issueEnd" type="time"></div></div>
+<div class="row"><div><label>كېسەل كۆرۈش باشلىنىشى</label><input id="consultStart" type="time"></div><div><label>كېسەل كۆرۈش ئاخىرلىشىشى</label><input id="consultEnd" type="time"></div></div>
+<div class="row"><div><label>بىمار ئارىلىقى (مىنۇت)</label><input id="slot" type="number" min="1"></div><div><label>كۈندىلىك نومۇر چېكى</label><input id="max" type="number" min="1"></div></div>
+<label>نومۇر بېرىش كۈنلىرى</label><div class="days">
+<label><input type="checkbox" class="dayCheck" value="1"> دۈشەنبە</label><label><input type="checkbox" class="dayCheck" value="2"> سەيشەنبە</label><label><input type="checkbox" class="dayCheck" value="3"> چارشەنبە</label><label><input type="checkbox" class="dayCheck" value="4"> پەيشەنبە</label><label><input type="checkbox" class="dayCheck" value="5"> جۈمە</label><label><input type="checkbox" class="dayCheck" value="6"> شەنبە</label><label><input type="checkbox" class="dayCheck" value="0"> يەكشەنبە</label></div>
+<button class="btn green" onclick="saveSettings()">ساقلاش</button><button id="toggleBtn" class="btn" onclick="toggleOpen()"></button><b id="openStatus"></b>
+</div>
+<div class="card"><h3>🔔 كۈندىلىك يېڭى ئىلتىماس (<span id="pendCount">0</span>)</h3><div id="pendList"></div></div>
+<div class="card"><h3>✅ تەستىقلانغان بىمارلار</h3><button class="btn red" onclick="clearToday()">بۈگۈن تەستىقلانغانلارنى تازىلاش (نومۇرنى قايتا باشلاش)</button><div style="overflow:auto;margin-top:10px"><table><thead><tr><th>نومۇر</th><th>ئىسىم</th><th>ياش/جىنس</th><th>تېلېفون</th><th>كېلىش ۋاقتى</th><th>ئۆچۈرۈش</th></tr></thead><tbody id="approvedTable"></tbody></table></div></div>
+<div class="card"><h3>📅 تارىخ</h3><input id="searchDate" type="date"><button class="btn blue" onclick="searchHistory()">ئىزدەش</button><button class="btn dark" onclick="showAllHistory()">ھەممىسى</button><button class="btn red" onclick="deleteHistory()">تارىخنى ئۆچۈرۈش</button><div id="historyList"></div></div>
+</div></main>
+<script>
+const firebaseConfig={apiKey:"AIzaSyDBW7014u1LppSfCUr4-kWvMM576l89uHA",authDomain:"alshifa-573-6bf98.firebaseapp.com",databaseURL:"https://alshifa-573-6bf98-default-rtdb.firebaseio.com",projectId:"alshifa-573-6bf98",storageBucket:"alshifa-573-6bf98.firebasestorage.app",messagingSenderId:"622021167636",appId:"1:622021167636:web:3c6deee47e0bfe501eb501",measurementId:"G-2H59J6F8GE"};
+firebase.initializeApp(firebaseConfig);const auth=firebase.auth(),db=firebase.database();
+const DEFAULT={issueStart:"08:00",issueEnd:"12:00",consultStart:"09:00",consultEnd:"17:00",slot:15,max:30,isOpen:true,issueDays:[1,2,3,4,5,6]};
+let settings={...DEFAULT},pending=[],approved=[],counter=0;
+function today(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function login(){const e=email.value.trim(),p=pwd.value;if(!e||!p){err.textContent="ئېلخەت ۋە پارولنى تولدۇرۇڭ";return}auth.signInWithEmailAndPassword(e,p).catch(x=>err.textContent="كىرەلمىدى: "+x.message)}
+function logout(){auth.signOut()}
+auth.onAuthStateChanged(u=>{loginBox.classList.toggle('hidden',!!u);panel.classList.toggle('hidden',!u);if(u){userLabel.textContent=u.email||"";listen()}});
+function listen(){
+ db.ref('settings').on('value',s=>{settings={...DEFAULT,...(s.val()||{})};fillSettings();render()});
+ db.ref('pending').on('value',s=>{pending=Object.values(s.val()||{}).filter(x=>x.dateISO===today());render()});
+ db.ref('approved').on('value',s=>{approved=Object.values(s.val()||{}).filter(x=>x.dateISO===today());render()});
+ db.ref('last_counter').on('value',s=>{counter=Number(s.val()||0)});
+}
+function fillSettings(){issueStart.value=settings.issueStart;issueEnd.value=settings.issueEnd;consultStart.value=settings.consultStart;consultEnd.value=settings.consultEnd;slot.value=settings.slot;max.value=settings.max;document.querySelectorAll('.dayCheck').forEach(c=>c.checked=(settings.issueDays||[]).includes(+c.value))}
+function saveSettings(){const a=[issueStart.value,issueEnd.value,consultStart.value,consultEnd.value];if(a.some(x=>!x)||Number(slot.value)<1||Number(max.value)<1){alert('بارلىق ۋاقىت ۋە سانلارنى توغرا تولدۇرۇڭ');return}settings={...settings,issueStart:a[0],issueEnd:a[1],consultStart:a[2],consultEnd:a[3],slot:Number(slot.value),max:Number(max.value),issueDays:[...document.querySelectorAll('.dayCheck:checked')].map(c=>+c.value)};db.ref('settings').set(settings).then(()=>alert('ساقلاندى')).catch(e=>alert(e.message))}
+function toggleOpen(){db.ref('settings/isOpen').set(!settings.isOpen)}
+function render(){openStatus.textContent=settings.isOpen?'🟢 ئېچىق':'🔴 توختىتىلدى';toggleBtn.textContent=settings.isOpen?'⏸️ توختىتىش':'▶️ ئېچىش';toggleBtn.className='btn '+(settings.isOpen?'red':'green');pendCount.textContent=pending.length;
+ pendList.innerHTML=pending.map(p=>`<div class="pending"><div><b>${esc(p.name)} (${esc(p.age)} ياش - ${esc(p.gender)})</b><br>📞 ${esc(p.phone)}<br>⏰ ${esc(p.time||'')}</div><div><button class="btn green" onclick="approve('${esc(p.id)}')">تەستىقلاش</button><button class="btn red" onclick="reject('${esc(p.id)}')">رەت قىلىش</button></div></div>`).join('')||'<div class="empty">ئىلتىماس يوق</div>';
+ approvedTable.innerHTML=approved.slice().sort((a,b)=>b.num-a.num).map(a=>`<tr><td>#${a.num}</td><td>${esc(a.name)}</td><td>${esc(a.age)} / ${esc(a.gender)}</td><td>${esc(a.phone)}</td><td>${esc(a.arriveTime)}</td><td><button class="btn red" onclick="delOne('${esc(a.id)}')">ئۆچۈر</button></td></tr>`).join('')||'<tr><td colspan="6">تەستىقلانغان بىمار يوق</td></tr>'}
+function calcTime(num){let [h,m]=settings.consultStart.split(':').map(Number);let total=h*60+m+(num-1)*settings.slot;return `${String(Math.floor(total/60)%24).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`}
+async function approve(id){if(approved.length>=Number(settings.max)){alert('كۈندىلىك نومۇر چېكى توشتى');return}const p=pending.find(x=>x.id===id);if(!p)return;
+ try{const tx=await db.ref('last_counter').transaction(n=>{n=Number(n||0);if(n>=Number(settings.max))return;return n+1});if(!tx.committed){alert('نومۇر چېكى توشتى');return}const num=tx.snapshot.val(),date=today(),arriveTime=calcTime(num),item={...p,num,arriveTime,dateISO:date,approvedAt:Date.now()};
+ const updates={};updates[`approved/${id}`]=item;updates[`approvedPublic/${id}`]={num,arriveTime,dateISO:date};updates[`history/${id}`]={dateISO:date,name:p.name,num,arriveTime};
+ await db.ref().update(updates);await db.ref(`pending/${id}`).remove();
+ }catch(e){alert('تەستىقلاش مەغلۇپ: '+e.message)}}
+function reject(id){if(confirm('بۇ ئىلتىماسنى رەت قىلامسىز؟'))db.ref(`pending/${id}`).remove()}
+function delOne(id){if(confirm('بۇ نومۇرنى ئۆچۈرەمسىز؟'))db.ref().update({[`approved/${id}`]:null,[`approvedPublic/${id}`]:null})}
+function clearToday(){if(!confirm('بۈگۈن تەستىقلانغانلارنى ئۆچۈرۈپ نومۇرنى 0 قىلىش؟'))return;const updates={approved:null,approvedPublic:null,last_counter:0};db.ref().update(updates)}
+function searchHistory(){if(!searchDate.value){alert('تارىخ تاللاڭ');return}db.ref('history').once('value').then(s=>renderHistory(Object.values(s.val()||{}).filter(x=>x.dateISO===searchDate.value)))}
+function showAllHistory(){db.ref('history').once('value').then(s=>renderHistory(Object.values(s.val()||{})))}
+function renderHistory(list){if(!list.length){historyList.innerHTML='<div class="empty">تارىخ يوق</div>';return}historyList.innerHTML='<div style="overflow:auto"><table><tr><th>تارىخ</th><th>نومۇر</th><th>ئىسىم</th><th>ۋاقىت</th></tr>'+list.sort((a,b)=>b.dateISO.localeCompare(a.dateISO)||b.num-a.num).map(x=>`<tr><td>${esc(x.dateISO)}</td><td>#${x.num}</td><td>${esc(x.name)}</td><td>${esc(x.arriveTime)}</td></tr>`).join('')+'</table></div>'}
+function deleteHistory(){if(confirm('تارىخنى پۈتۈنلەي ئۆچۈرەمسىز؟'))db.ref('history').remove().then(()=>historyList.innerHTML='')}
+</script></body></html>

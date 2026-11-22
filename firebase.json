@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "database.rules.json",
+      "README.txt",
+      "*.log",
+      "node_modules/**"
+    ],
+    "cleanUrls": false
+  }
+}
